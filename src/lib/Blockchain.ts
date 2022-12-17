@@ -320,16 +320,19 @@ export class Blockchain {
   }
 
   // Validates a proof by checking if the hash of the block has the required number of leading zeros
-  private validateProof(proof: number): boolean {
-    const block = this.chain[this.chain.length - 1];
-    const data =
-      JSON.stringify(block.transactions) +
-      block.index +
-      block.timestamp +
-      proof +
-      block.previousHash;
-    const hash = crypto.createHash("sha256").update(data).digest("hex");
-    return hash.slice(0, DIFFICULTY) === "0".repeat(DIFFICULTY);
+  private validateProof(block: Block): boolean {
+    const hash = crypto
+      .createHash("sha256")
+      .update(
+        this.chain[this.chain.length - 1].proof +
+          this.chain[this.chain.length - 1].hash +
+          block.proof +
+          block.minerAddress
+      )
+      .digest("hex");
+
+    console.log(hash);
+    return hash.substring(0, DIFFICULTY) === Array(DIFFICULTY + 1).join("0");
   }
 
   // Sends a block to all nodes in the network
@@ -356,11 +359,24 @@ export class Blockchain {
       console.log("Previous hash is not correct");
       return false;
     }
-    if (!this.validateProof(block.proof)) {
+    if (!this.validateProof(block)) {
       console.log("Proof is not correct");
       return false;
     }
-    if (block.hash !== block.calculateHash()) {
+    if (
+      block.hash !==
+      crypto
+        .createHash("sha256")
+        .update(
+          JSON.stringify(block.transactions) +
+            block.index +
+            block.timestamp +
+            block.proof +
+            block.previousHash +
+            block.minerAddress
+        )
+        .digest("hex")
+    ) {
       console.log("Hash is not correct");
       return false;
     }
