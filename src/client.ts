@@ -1,22 +1,10 @@
-import { RPCClient } from "./lib/RPCClient";
-
-const rpcClient = new RPCClient();
-
+import { RPCClient as rpcClient } from "./lib/RPCClient";
 // Create a new user
 
 async function testRpc() {
-  /*
-  await rpcClient.request("createUser", ["Alice"], (error: Error | null) => {
-    if (error) {
-      console.error(error.message);
-    } else {
-      console.log("User created successfully");
-    }
-  });
-  */
   await rpcClient.request(
     "createTransaction",
-    ["Alice", "Bob", 10],
+    ["Miner023402356348623406234862346420", "Bob", 10],
     (error: Error | null) => {
       if (error) {
         console.error(error.message);
@@ -25,6 +13,19 @@ async function testRpc() {
       }
     }
   );
+
+  await rpcClient.request(
+    "getBalance",
+    ["Bob"],
+    (error: Error | null, result: any) => {
+      if (error) {
+        console.error(error.message);
+      } else {
+        console.log(result);
+      }
+    }
+  );
+
   /*
   await rpcClient.request(
     "getChain",

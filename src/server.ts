@@ -1,20 +1,11 @@
 import { Blockchain, User } from "./lib/Blockchain";
 import { RPCManager } from "./lib/RPCManager";
 
-const blockchain = new Blockchain();
+const blockchain = new Blockchain("Miner023402356348623406234862346420");
 blockchain.init();
 
 const rpcManager = new RPCManager();
 rpcManager.start();
-
-rpcManager.on(
-  "createUser",
-  (params: any[], callback: (result: any) => void) => {
-    const address = params[0];
-    blockchain.createUser(address);
-    callback(null);
-  }
-);
 
 rpcManager.on(
   "createTransaction",
@@ -51,3 +42,16 @@ rpcManager.on(
 rpcManager.on("getChain", (params: any[], callback: (result: any) => void) => {
   callback(blockchain.chain);
 });
+
+rpcManager.on(
+  "getBalance",
+  (params: any[], callback: (result: any) => void) => {
+    const address = params[0];
+    const user = blockchain.users.find((u) => u.address === address);
+    if (!user) {
+      callback(new Error("User not found"));
+      return;
+    }
+    callback(user.money);
+  }
+);

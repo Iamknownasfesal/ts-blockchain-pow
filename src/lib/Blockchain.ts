@@ -5,25 +5,22 @@ import { randomBytes } from "crypto";
 import * as secp256k1 from "secp256k1";
 
 // The maximum number of zeros that the hash of a block must have at the beginning in order for it to be valid
-const DIFFICULTY = 4;
+const DIFFICULTY = 6;
 
 // The maximum number of blocks that can be stored in the chain
-const MAX_BLOCKS = 20;
-
-// The maximum number of nodes that can be in the network
-const MAX_NODES = 5;
+const MAX_BLOCKS = 200000;
 
 // The minimum amount of time, in milliseconds, that must pass before a new block can be added to the chain
-const BLOCK_TIME = 30000;
+const BLOCK_TIME = 10000;
 
 // The maximum number of transactions that can be included in a block
 const MAX_TRANSACTIONS = 10;
 
-// The maximum amount of money that a user can have
-const MAX_MONEY = 100;
+// The reward that is given to the miner of a block
+const BLOCK_REWARD = 100;
 
 // The fee that is charged for each transaction
-const TRANSACTION_FEE = 1;
+const TRANSACTION_FEE = 10;
 
 // The data structure that represents a block in the chain
 class Block {
@@ -33,19 +30,23 @@ class Block {
   public proof: number;
   public previousHash: string;
   public hash: string;
+  public minerAddress: string;
 
   constructor(
     index: number,
     transactions: Transaction[],
     proof: number,
-    previousHash: string
+    previousHash: string,
+    minerAddress: string
   ) {
     this.index = index;
     this.timestamp = Date.now();
     this.transactions = transactions;
     this.proof = proof;
     this.previousHash = previousHash;
+    this.minerAddress = minerAddress;
     this.hash = this.calculateHash();
+    this.transactions.push(new Transaction("", minerAddress, BLOCK_REWARD));
   }
 
   // Calculates the hash of the block
@@ -55,7 +56,8 @@ class Block {
       this.index +
       this.timestamp +
       this.proof +
-      this.previousHash;
+      this.previousHash +
+      this.minerAddress;
     return crypto.createHash("sha256").update(data).digest("hex");
   }
 }
@@ -108,6 +110,7 @@ export class User {
     if (this.money < amount + TRANSACTION_FEE) {
       return false;
     }
+
     this.money -= amount + TRANSACTION_FEE;
 
     // If recipient is not in the network, add them
@@ -196,23 +199,56 @@ export class Blockchain {
   public users: User[];
   public transactions: Transaction[];
   public timer: NodeJS.Timer | undefined;
+  public minerAddress: string;
 
-  constructor() {
+  constructor(minerAddress: string) {
     this.chain = [];
     this.nodes = [];
     this.users = [];
     this.transactions = [];
+    this.minerAddress = minerAddress;
   }
 
   // Initializes the blockchain and sets up the timer for adding blocks
   public async init(): Promise<void> {
     this.createGenesisBlock();
+    // If there is blocks folder, load the blocks from there
+    if (fs.existsSync("blocks")) {
+      const files = fs.readdirSync("blocks");
+      // sort files by file names
+      files.sort((a, b) => {
+        const aIndex = parseInt(a.split(".")[0]);
+        const bIndex = parseInt(b.split(".")[0]);
+        return aIndex - bIndex;
+      });
+      for (const file of files) {
+        const data = fs.readFileSync("blocks/" + file, "utf8");
+        const block: Block = JSON.parse(data);
+        // Execute transactions in the blocks
+        for (const transaction of block.transactions) {
+          this.createUser(transaction.sender);
+          this.createUser(transaction.recipient);
+
+          if (transaction.sender !== "")
+            this.users.find(
+              (user) => user.address === transaction.sender
+            )!.money -= transaction.amount;
+
+          this.users.find(
+            (user) => user.address === transaction.recipient
+          )!.money += transaction.amount;
+        }
+
+        console.log("Loaded block " + block.index);
+        this.chain.push(block);
+      }
+    }
     this.timer = setInterval(() => this.createBlock(), BLOCK_TIME);
   }
 
   // Creates the first block in the chain (the genesis block)
   private createGenesisBlock(): void {
-    const block = new Block(0, [], 0, "");
+    const block = new Block(0, [], 0, "", "Genesis");
     block.hash = block.calculateHash();
     this.chain.push(block);
   }
@@ -220,34 +256,60 @@ export class Blockchain {
   // Creates a new block and adds it to the chain
   private async createBlock(): Promise<void> {
     if (this.chain.length >= MAX_BLOCKS) {
-      clearInterval(this.timer);
+      clearInterval(this.timer!);
       return;
     }
-    const proof = this.proofOfWork();
-    const transactions = this.transactions.splice(0, MAX_TRANSACTIONS);
-    const merkleTree = new MerkleTree(
-      transactions.map((t) => JSON.stringify(t))
+    const proof = this.proofOfWork(
+      this.chain[this.chain.length - 1].proof,
+      this.chain[this.chain.length - 1].hash,
+      this.minerAddress
     );
+    const transactions = this.transactions.splice(0, MAX_TRANSACTIONS);
     const previousHash = this.chain[this.chain.length - 1].hash;
     const block = new Block(
       this.chain.length,
       transactions,
       proof,
-      previousHash
+      previousHash,
+      this.minerAddress
     );
     block.hash = block.calculateHash();
     this.chain.push(block);
     this.writeBlockToFile(block);
     this.broadcastBlock(block);
     this.consensus();
+
+    console.log(this.chain.length);
+
+    let miner = this.users.find((user) => user.address === this.minerAddress);
+
+    if (miner === undefined) this.createUser(this.minerAddress);
+
+    miner = this.users.find((user) => user.address === this.minerAddress);
+    if (miner !== undefined) miner.money += BLOCK_REWARD;
+
+    this.users = [
+      ...this.users.filter((user) => user.address !== this.minerAddress),
+      miner as User,
+    ];
   }
 
-  // Performs the proof of work algorithm to find a valid proof
-  private proofOfWork(): number {
+  public proofOfWork(
+    lastProof: number,
+    lastHash: string,
+    minerAddress: string
+  ): number {
     let proof = 0;
-    while (!this.validateProof(proof)) {
+    let hash = "";
+
+    while (hash.substring(0, DIFFICULTY) !== Array(DIFFICULTY + 1).join("0")) {
       proof++;
+      hash = crypto
+        .createHash("sha256")
+        .update(lastProof + lastHash + proof + minerAddress)
+        .digest("hex");
     }
+
     return proof;
   }
 
@@ -347,9 +409,11 @@ export class Blockchain {
   public createUser(address: string): void {
     const privateKey = randomBytes(32).toString("hex");
     const publicKey = secp256k1.publicKeyCreate(Buffer.from(privateKey, "hex"));
-    this.users.push(
-      new User(address, privateKey, publicKey.toString(), MAX_MONEY)
-    );
+
+    if (this.users.find((user) => user.address === address) !== undefined)
+      return;
+
+    this.users.push(new User(address, privateKey, publicKey.toString(), 0));
   }
 
   // Creates a new transaction and adds it to the list of transactions
