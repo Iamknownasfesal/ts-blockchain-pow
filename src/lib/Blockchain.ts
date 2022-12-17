@@ -5,7 +5,7 @@ import { randomBytes } from "crypto";
 import * as secp256k1 from "secp256k1";
 
 // The maximum number of zeros that the hash of a block must have at the beginning in order for it to be valid
-const DIFFICULTY = 6;
+const DIFFICULTY = 5;
 
 // The maximum number of blocks that can be stored in the chain
 const MAX_BLOCKS = 200000;
@@ -37,10 +37,11 @@ class Block {
     transactions: Transaction[],
     proof: number,
     previousHash: string,
-    minerAddress: string
+    minerAddress: string,
+    timestamp: number = Date.now()
   ) {
     this.index = index;
-    this.timestamp = Date.now();
+    this.timestamp = timestamp;
     this.transactions = transactions;
     this.proof = proof;
     this.previousHash = previousHash;
@@ -224,7 +225,13 @@ export class Blockchain {
       for (const file of files) {
         const data = fs.readFileSync("blocks/" + file, "utf8");
         const block: Block = JSON.parse(data);
-        // Execute transactions in the blocks
+        const verify = this.verifyBlock(block);
+
+        if (!verify) {
+          console.log("Block " + block.index + " is invalid");
+          break;
+        }
+
         for (const transaction of block.transactions) {
           this.createUser(transaction.sender);
           this.createUser(transaction.recipient);
@@ -240,7 +247,6 @@ export class Blockchain {
         }
 
         console.log("Loaded block " + block.index);
-        this.chain.push(block);
       }
     }
     this.timer = setInterval(() => this.createBlock(), BLOCK_TIME);
@@ -248,7 +254,7 @@ export class Blockchain {
 
   // Creates the first block in the chain (the genesis block)
   private createGenesisBlock(): void {
-    const block = new Block(0, [], 0, "", "Genesis");
+    const block = new Block(0, [], 0, "", "Genesis", 0);
     block.hash = block.calculateHash();
     this.chain.push(block);
   }
@@ -340,24 +346,28 @@ export class Blockchain {
   }
 
   // Verifies that a block is valid and adds it to the chain if it is
-  private async verifyBlock(block: Block): Promise<void> {
+  private verifyBlock(block: Block): boolean {
     if (block.index !== this.chain.length) {
-      return;
+      console.log("Index is not correct");
+      return false;
     }
     if (block.previousHash !== this.chain[this.chain.length - 1].hash) {
-      return;
+      console.log(block.previousHash, this.chain[this.chain.length - 1].hash);
+      console.log("Previous hash is not correct");
+      return false;
     }
     if (!this.validateProof(block.proof)) {
-      return;
+      console.log("Proof is not correct");
+      return false;
     }
-    const merkleTree = new MerkleTree(
-      block.transactions.map((t) => JSON.stringify(t))
-    );
     if (block.hash !== block.calculateHash()) {
-      return;
+      console.log("Hash is not correct");
+      return false;
     }
     this.chain.push(block);
     this.writeBlockToFile(block);
+
+    return true;
   }
 
   // Performs the BFT consensus algorithm to determine the longest valid chain
