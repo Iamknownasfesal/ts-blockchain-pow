@@ -31,6 +31,7 @@ class Block {
   public previousHash: string;
   public hash: string;
   public minerAddress: string;
+  public merkleRoot: string;
 
   constructor(
     index: number,
@@ -40,25 +41,35 @@ class Block {
     minerAddress: string,
     timestamp: number = Date.now()
   ) {
-    this.index = index;
     this.timestamp = timestamp;
+    this.index = index;
     this.transactions = transactions;
     this.proof = proof;
     this.previousHash = previousHash;
     this.minerAddress = minerAddress;
-    this.hash = this.calculateHash();
     this.transactions.push(new Transaction("", minerAddress, BLOCK_REWARD));
+    // Hash each transaction and use the resulting hashes as leaves of the Merkle tree
+    const leaves = transactions.map((tx) => this.hashTransaction(tx));
+    const tree = new MerkleTree(leaves);
+    this.merkleRoot = tree.root;
+    this.hash = this.calculateHash();
+  }
+
+  public hashTransaction(transaction: Transaction): string {
+    const data =
+      transaction.sender + transaction.recipient + transaction.amount;
+    return crypto.createHash("sha256").update(data).digest("hex");
   }
 
   // Calculates the hash of the block
   public calculateHash(): string {
     const data =
-      JSON.stringify(this.transactions) +
+      this.merkleRoot +
       this.index +
-      this.timestamp +
       this.proof +
       this.previousHash +
-      this.minerAddress;
+      this.minerAddress +
+      this.timestamp;
     return crypto.createHash("sha256").update(data).digest("hex");
   }
 }
@@ -124,72 +135,40 @@ export class User {
   }
 }
 
-// The data structure that represents a Merkle tree
 class MerkleTree {
-  public root: MerkleNode;
+  public leaves: string[];
+  public root: string;
 
   constructor(leaves: string[]) {
-    this.root = this.buildTree(leaves);
+    this.leaves = leaves;
+    this.root = this.calculateRoot();
   }
 
-  // Builds a Merkle tree from a list of leaves
-  private buildTree(leaves: string[]): MerkleNode {
-    if (leaves.length === 1) {
-      return new MerkleNode(leaves[0]);
+  // Calculates the root hash of the Merkle tree
+  public calculateRoot(): string {
+    if (this.leaves.length === 0) {
+      return "";
     }
 
-    if (leaves.length === 0) {
-      return new MerkleNode("");
-    }
+    let nodes: string[] = this.leaves;
 
-    const half = Math.ceil(leaves.length / 2);
-
-    const left = this.buildTree(leaves.slice(0, half));
-    const right = this.buildTree(leaves.slice(half));
-    return new MerkleNode(
-      crypto
-        .createHash("sha256")
-        .update(left.hash + right.hash)
-        .digest("hex"),
-      left,
-      right
-    );
-  }
-
-  // Verifies that a given leaf is present in the tree
-  public verify(leaf: string): boolean {
-    let node = this.root;
-    while (node.left !== undefined && node.right !== undefined) {
-      const hash = crypto
-        .createHash("sha256")
-        .update(node.left.hash + node.right.hash)
-        .digest("hex");
-      if (hash === node.hash) {
-        if (node.left.hash === leaf) {
-          return true;
-        }
-        node = node.right;
-      } else {
-        if (node.right.hash === leaf) {
-          return true;
-        }
-        node = node.left;
+    while (nodes.length > 1) {
+      const newNodes: string[] = [];
+      for (let i = 0; i < nodes.length; i += 2) {
+        const left = nodes[i];
+        const right = i + 1 < nodes.length ? nodes[i + 1] : nodes[i];
+        newNodes.push(this.hashPair(left, right));
       }
+      nodes = newNodes;
     }
-    return node.hash === leaf;
+
+    return nodes[0];
   }
-}
 
-// The data structure that represents a node in a Merkle tree
-class MerkleNode {
-  public hash: string;
-  public left: MerkleNode | undefined;
-  public right: MerkleNode | undefined;
-
-  constructor(hash: string, left?: MerkleNode, right?: MerkleNode) {
-    this.hash = hash;
-    this.left = left;
-    this.right = right;
+  // Hashes a pair of nodes together
+  public hashPair(left: string, right: string): string {
+    const data = left + right;
+    return crypto.createHash("sha256").update(data).digest("hex");
   }
 }
 
@@ -368,12 +347,12 @@ export class Blockchain {
       crypto
         .createHash("sha256")
         .update(
-          JSON.stringify(block.transactions) +
+          block.merkleRoot +
             block.index +
-            block.timestamp +
             block.proof +
             block.previousHash +
-            block.minerAddress
+            block.minerAddress +
+            block.timestamp
         )
         .digest("hex")
     ) {

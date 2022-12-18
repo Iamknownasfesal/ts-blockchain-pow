@@ -3,6 +3,18 @@ import { RPCClient as rpcClient } from "./lib/RPCClient";
 
 async function testRpc() {
   await rpcClient.request(
+    "getBalance",
+    ["Miner023402356348623406234862346420"],
+    (error: Error | null, result: any) => {
+      if (error) {
+        console.error(error.message);
+      } else {
+        console.log(result);
+      }
+    }
+  );
+
+  await rpcClient.request(
     "createTransaction",
     ["Miner023402356348623406234862346420", "Bob", 10],
     (error: Error | null) => {
@@ -16,7 +28,7 @@ async function testRpc() {
 
   await rpcClient.request(
     "getBalance",
-    ["Bob"],
+    ["Miner023402356348623406234862346420"],
     (error: Error | null, result: any) => {
       if (error) {
         console.error(error.message);
