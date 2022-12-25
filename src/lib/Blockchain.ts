@@ -79,11 +79,18 @@ class Transaction {
   public sender: string;
   public recipient: string;
   public amount: number;
+  public gas: number;
 
-  constructor(sender: string, recipient: string, amount: number) {
+  constructor(
+    sender: string,
+    recipient: string,
+    amount: number,
+    gas: number = 0
+  ) {
     this.sender = sender;
     this.recipient = recipient;
     this.amount = amount;
+    this.gas = gas;
   }
 }
 
@@ -431,7 +438,12 @@ export class Blockchain {
       return false;
     }
     this.transactions.push(
-      new Transaction(sender.publicKey, recipient.publicKey, amount)
+      new Transaction(
+        sender.publicKey,
+        recipient.publicKey,
+        amount,
+        TRANSACTION_FEE
+      )
     );
     return true;
   }
