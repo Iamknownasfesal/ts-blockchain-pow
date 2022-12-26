@@ -4,7 +4,7 @@
 
 Bu proje, ITopkapıÜniversitesi Bilgisayar Programcılığı bölümü 2022-2023 Bahar dönemi dersi olan "Veri Yapıları" dersi için hazırlanmıştır.
 
-## Proje Hakkında
+## Proje Hakkında
 
 Bu proje, bir blockchain oluşturmak için gerekli olan Proof of Work algoritmasını Typescript ile yazmaktadır. Içerisinde;
 
@@ -19,12 +19,12 @@ Istenilen istekler için, RPC Server'a istek atılabilir. Örnek istekler, `src/
 
 Bloklar `./blocks` dizininde saklanmaktadır.
 
-## Kullanılan Kütüphaneler
+## Kullanılan Kütüphaneler
 
 - [elliptic](https://www.npmjs.com/package/elliptic)
 - [crypto-js](https://www.npmjs.com/package/crypto-js)
 
-## Nasıl Çalıştırılır?
+## Nasıl Çalıştırılır?
 
 Öncelikle projeyi klonlayın.
 
@@ -39,7 +39,7 @@ yarn
 yarn start-server
 ```
 
-## RPC Server'a İstek Atmak
+## RPC Server'a İstek Atmak
 
 RPC Server'a istek atmak için, `src/client.ts` dosyasını kullanabilirsiniz.
 
@@ -47,7 +47,7 @@ RPC Server'a istek atmak için, `src/client.ts` dosyasını kullanabilirsiniz.
 yarn start-client
 ```
 
-## Referanslar
+## Referanslar
 
 - [Bitcoin: A Peer-to-Peer Electronic Cash System](https://bitcoin.org/bitcoin.pdf)
 - [Bitcoin Wiki](https://en.bitcoin.it/wiki/Main_Page)
