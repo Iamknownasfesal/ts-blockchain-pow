@@ -1,17 +1,22 @@
 {
   "name": "ts-blockchain-pow",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
     "prepare": "tsc",
     "build": "tsc",
     "start-server": "ts-node src/server.ts",
     "start-client": "ts-node src/client.ts"
   },
-  "author": "",
-  "license": "ISC",
-  "keywords": [],
-  "description": "",
+  "author": "Mehmet Kırçal",
+  "license": "MIT",
+  "keywords": [
+    "TS",
+    "PoW",
+    "ITU",
+    "Blockchain",
+    "Crypto"
+  ],
+  "description": "Bu proje, bir blockchain oluşturmak için gerekli olan Proof of Work algoritmasını Typescript ile yazmaktadır.",
   "husky": {
     "hooks": {
       "pre-commit": "pretty-quick --staged"

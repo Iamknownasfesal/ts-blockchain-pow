@@ -41,9 +41,10 @@ yarn start-server
 
 ## RPC Server'a İstek Atmak
 
-RPC Server'a istek atmak için, `src/client.ts` dosyasını kullanabilirsiniz.
+RPC Server'a istek atmak için, `src/client.ts` dosyasını kullanabilirsiniz. Fakat önce, RPC Server'ı çalıştırmalısınız.
 
 ```bash
+yarn
 yarn start-client
 ```
 
