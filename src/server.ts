@@ -1,57 +1,45 @@
-import { Blockchain, User } from "./lib/Blockchain";
+import { Blockchain } from "./lib/types/Blockchain";
 import { RPCManager } from "./lib/RPCManager";
+import { Transaction } from "./lib/types/Transaction";
 
-const blockchain = new Blockchain("Miner023402356348623406234862346420");
+const publicKey =
+  "0471bffa8e38855631ea0647cbc1aa3f2dbdb560435a17602031f0c854cd3b2e5cecd6d791feb91ab3f6980ec3b599e4fe70488e848b4fb179c45117ab2fd85792";
+const privateKey =
+  "6b987d00630ef44e24da291c2431be800faa31ef325290c094e03e4474d1768b";
+
+console.log("Private key: ", privateKey);
+console.log("Public key: ", publicKey);
+
+const blockchain = new Blockchain(publicKey, privateKey);
 blockchain.init();
+console.log("Blockchain initialized successfully");
 
 const rpcManager = new RPCManager();
 rpcManager.start();
+console.log("RPC server started successfully");
 
 rpcManager.on(
-  "createTransaction",
+  "addTransaction",
   (params: any[], callback: (result: any) => void) => {
-    const senderAddress = params[0];
-    const recipientAddress = params[1];
-    const amount = params[2];
-    const sender = blockchain.users.find((u) => u.address === senderAddress);
-    let recipient = blockchain.users.find(
-      (u) => u.address === recipientAddress
+    const transaction = new Transaction(
+      params[0].senderPubKey,
+      params[0].receiverPubKey,
+      params[0].volume,
+      undefined,
+      params[0].timestamp,
+      params[0].signature
     );
-
-    if (!sender) {
-      callback(new Error("User not found"));
-      return;
-    }
-
-    if (!recipient) {
-      // Create user
-      blockchain.createUser(recipientAddress);
-      recipient = blockchain.users.find((u) => u.address === recipientAddress);
-    }
-
-    if (
-      blockchain.createTransaction(sender as User, recipient as User, amount)
-    ) {
-      callback(null);
+    if (blockchain.addTransaction(transaction)) {
+      callback("Transaction created successfully");
     } else {
-      callback(new Error("Transaction failed"));
+      callback("Transaction failed");
     }
   }
 );
 
-rpcManager.on("getChain", (params: any[], callback: (result: any) => void) => {
-  callback(blockchain.chain);
-});
-
 rpcManager.on(
   "getBalance",
   (params: any[], callback: (result: any) => void) => {
-    const address = params[0];
-    const user = blockchain.users.find((u) => u.address === address);
-    if (!user) {
-      callback(new Error("User not found"));
-      return;
-    }
-    callback(user.money);
+    callback(blockchain.getBalance(params[0]));
   }
 );

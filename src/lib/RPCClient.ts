@@ -14,11 +14,7 @@ export class RPCClient {
 
     socket.on("data", (data) => {
       const response = JSON.parse(data.toString());
-      if (response.error) {
-        callback(new Error(response.error));
-      } else {
-        callback(null, response.result);
-      }
+      callback(null, response.result);
       socket.end();
     });
 
