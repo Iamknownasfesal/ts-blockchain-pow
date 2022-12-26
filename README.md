@@ -29,7 +29,7 @@ Bloklar `./blocks` dizininde saklanmaktadır.
 Öncelikle projeyi klonlayın.
 
 ```bash
-git clone
+git clone https://github.com/Iamknownasfesal/ts-blockchain-pow.git
 ```
 
 Daha sonra projeyi çalıştırın.
