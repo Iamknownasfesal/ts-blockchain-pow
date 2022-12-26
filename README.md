@@ -13,7 +13,7 @@ Bu proje, bir blockchain oluşturmak için gerekli olan Proof of Work algoritmas
 - RPC Server
 - Prime256v1
 
-bulundurur. Proje, Typescript ile yazılmıştır. Proje, RPC Server ile çalışmaktadır. RPC Server, JSON-RPC protokolü ile çalışmaktadır.
+bulundurur. Proje, RPC Server ile çalışmaktadır. RPC Server, JSON-RPC protokolü ile çalışmaktadır.
 
 Istenilen istekler için, RPC Server'a istek atılabilir. Örnek istekler, `src/client.ts` dosyasında bulunmaktadır.
 
