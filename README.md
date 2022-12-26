@@ -1,4 +1,6 @@
-# Typescript Blockchain Proof of Work
+<img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white"/>
+
+# Typescript Blockchain Proof of Work
 
 Bu proje, ITopkapıÜniversitesi Bilgisayar Programcılığı bölümü 2022-2023 Bahar dönemi dersi olan "Veri Yapıları" dersi için hazırlanmıştır.
 
